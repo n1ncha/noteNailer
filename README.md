@@ -1,4 +1,4 @@
-# Fret to Staff
+# Note Nailer
 
 A guitar fretboard trainer that ties every fret to its note name, its spot in tab, and where it's written on the treble staff (guitar is written an octave above how it sounds).
 

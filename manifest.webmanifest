@@ -1,6 +1,6 @@
 {
-  "name": "Fret to Staff",
-  "short_name": "Fret to Staff",
+  "name": "Note Nailer",
+  "short_name": "Note Nailer",
   "start_url": "./",
   "display": "standalone",
   "orientation": "any",
