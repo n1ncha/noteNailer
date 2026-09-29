@@ -256,6 +256,7 @@ h1{font-family:var(--display);font-weight:700;font-size:var(--fs-xl);line-height
       <div class="toggles">
         <label class="toggle"><input type="checkbox" id="optAcc"> Sharps &amp; flats</label>
         <label class="toggle"><input type="checkbox" id="optOne"> One spot only (Find it)</label>
+        <label class="toggle"><input type="checkbox" id="optAll"> Find every spot (Find it)</label>
         <label class="toggle"><input type="checkbox" id="optHint"> Show name on staff</label>
         <label class="toggle"><input type="checkbox" id="optSound" checked> Sound</label>
       </div>
@@ -319,13 +320,14 @@ const octOf = m => Math.floor(m/12)-1; // sounding octave, middle C = 4
 const TOTAL_FRETS = 12;
 
 let st = {
-  mode:"find", min:0, max:12, view:"angled", angle:"standard", acc:false, hint:false, sound:true, piano:false, one:false, names:false,
+  mode:"find", min:0, max:12, view:"angled", angle:"standard", acc:false, hint:false, sound:true, piano:false, one:false, names:false, all:false,
   on:{1:true,2:true,3:true,4:true,5:true,6:true},
   score:0, tries:0, streak:0, best:0,
   perString:{1:[0,0],2:[0,0],3:[0,0],4:[0,0],5:[0,0],6:[0,0]},
   miss:{}, q:null, answered:false, lastKey:null, explore:null, pick:null
 };
 try{ const b = parseInt(localStorage.getItem("fts-best")||"0",10); if(b>0) st.best=b; const rr=(localStorage.getItem("fts-range")||"").split(","); if(rr.length===2){ const a=+rr[0], b=+rr[1]; if(a>=0&&b<=12&&a<=b){ st.min=a; st.max=b; } } const v=localStorage.getItem("fts-view"); if(v&&["tab","angled","facing"].includes(v)) st.view=v; if(localStorage.getItem("fts-piano")==="1") st.piano=true; if(localStorage.getItem("fts-one")==="1") st.one=true; if(localStorage.getItem("fts-names")==="1") st.names=true; }catch(e){}
+try{ if(localStorage.getItem("fts-all")==="1") st.all=true; }catch(e){}
 const saved = window.claude && window.claude.hot && window.claude.hot.data;
 if(saved && saved.st){ Object.assign(st, saved.st, {q:null, answered:false}); }
 if(window.claude && window.claude.hot && window.claude.hot.snapshot){ try{ window.claude.hot.snapshot(()=>({st})); }catch(e){} }
@@ -478,6 +480,7 @@ const scx = f => (cx(f)-ZL)*ZK;
 function spotsInPlay(){ // [{s,f,color}] whose string and fret numbers get highlighted on the neck
   const q=st.q, out=[];
   if(st.mode==="explore"){ if(st.explore&&st.pick===null) out.push({...st.explore,color:"var(--accent)"}); return out; }
+  if(allMode()&&q) return [...q.found.map(x=>({...x,color:"var(--good)"})),...q.wrong.map(x=>({...x,color:"var(--bad)"}))];
   if(!q||!st.answered) return out;
   if(st.mode==="find"){ if(q.fixed) out.push({...q.fixed,color:"var(--good)"}); if(q.ok) out.push({...q.clicked,color:"var(--good)"}); else { out.push({s:q.s,f:q.f,color:"var(--good)"}); out.push({...q.clicked,color:"var(--bad)"}); } }
   else out.push({s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"});
@@ -505,7 +508,7 @@ function drawBoard(){
       el("rect",{x:RX(x0,w),y,width:w,height:h,fill:black?"#1B1D1C":"#FBFAF6","fill-opacity":black?1:.4,stroke:black?"#1B1D1C":"#B9BEB6","stroke-opacity":black?1:.6,"stroke-width":1,"vector-effect":"non-scaling-stroke"},G);
     }});
   }
-  { const r = (st.one && st.mode==="find" && st.q && !st.answered) ? blockRange(st.q) : {lo:-1,hi:99}, ranged = st.mode!=="explore";
+  { const r = (st.one && !st.all && st.mode==="find" && st.q && !st.answered) ? blockRange(st.q) : {lo:-1,hi:99}, ranged = st.mode!=="explore";
     for(let f=0;f<=SHOWN;f++){ if(!(f<=r.lo||f>=r.hi||(ranged&&(f<st.min||f>st.max)))) continue;
       const x0 = f===0 ? NUT-LEFT_OPEN-12 : fx(f-1), w = f===0 ? LEFT_OPEN+12 : fx(f)-fx(f-1);
       el("rect",{x:RX(x0,w),y:bTop-2,width:w,height:bBot-bTop+4,fill:"#8F938D","fill-opacity":.62,"pointer-events":"none"},G); } }
@@ -577,12 +580,14 @@ function dot(p, kind, text, color){ // kind: target|good|bad|also|explore|oct
 function pool(){
   const out=[]; STRINGS.forEach(s=>{ if(!st.on[s.n]) return; for(let f=st.min;f<=st.max;f++){ const m=s.open+f; if(!st.acc && !isNat(m)) continue; out.push({s:s.n,f,midi:m}); }}); return out;
 }
+const allMode = () => st.all && st.mode==="find";
+const targets = q => allPositions(q.midi).filter(x=>st.on[x.s] && x.f>=st.min && x.f<=st.max);
 function newQuestion(){
   const p=pool(); if(!p.length){ st.q=null; render(); return; }
   let total=0; const w=p.map(x=>{ const key=x.s+"-"+x.f; const v=(key===st.lastKey?0.05:1)+2*(st.miss[key]||0); total+=v; return v; });
   let r=Math.random()*total, i=0; while(r>w[i] && i<w.length-1){ r-=w[i]; i++; }
   const q=p[i]; st.lastKey=q.s+"-"+q.f;
-  st.q={...q, pref: Math.random()<.5?"sharp":"flat"}; st.answered=false; render();
+  st.q={...q, pref: Math.random()<.5?"sharp":"flat"}; st.q.found=[]; st.q.wrong=[]; st.answered=false; render();
 }
 function record(ok){
   const q=st.q, key=q.s+"-"+q.f; st.tries++; st.perString[q.s][1]++;
@@ -603,19 +608,26 @@ function blockRange(q){
   allPositions(q.midi).forEach(x=>{ if(isTarget(q,x.s,x.f) || !st.on[x.s] || x.f<st.min || x.f>st.max) return; if(x.f>q.f) hi=Math.min(hi,x.f); else if(x.f<q.f) lo=Math.max(lo,x.f); });
   return {lo,hi};
 }
-const blocked=(s,f)=>{ if(st.mode==="find" && st.q && !st.answered && (f<st.min||f>st.max)) return true; if(!(st.one && st.mode==="find" && st.q && !st.answered)) return false; const r=blockRange(st.q); return f<=r.lo || f>=r.hi; };
+const blocked=(s,f)=>{ if(st.mode==="find" && st.q && !st.answered && (f<st.min||f>st.max)) return true; if(!(st.one && !st.all && st.mode==="find" && st.q && !st.answered)) return false; const r=blockRange(st.q); return f<=r.lo || f>=r.hi; };
 function onFret(s,f){
   const m=midiAt(s,f);
   if(st.mode==="explore"){ st.explore={s,f}; st.pick=null; pluck(m); render(); return; }
   // after a miss, playing the right note moves on
   if(st.q && st.answered){
     if(performance.now()-(st.answeredAt||0)<350) return;
-    if(!st.q.ok && m===st.q.midi && !st.q.fixed && !(st.one && st.mode==="find" && !isTarget(st.q,s,f))){ st.q.fixed={s,f}; pluck(m); autoNext=true; st.answeredAt=performance.now(); render(); clearTimeout(advanceTimer); advanceTimer=setTimeout(newQuestion,HOLD); return; }
+    if(!allMode() && !st.q.ok && m===st.q.midi && !st.q.fixed && !(st.one && st.mode==="find" && !isTarget(st.q,s,f))){ st.q.fixed={s,f}; pluck(m); autoNext=true; st.answeredAt=performance.now(); render(); clearTimeout(advanceTimer); advanceTimer=setTimeout(newQuestion,HOLD); return; }
     clearTimeout(advanceTimer); newQuestion(); return; // any other tap on the neck: next question
   }
   if(st.mode!=="find" || !st.q || st.answered) return;
   if(blocked(s,f)) return; // fret is blocked off for this question
   if(!st.on[s]) return; // string is switched off for this drill
+  if(allMode()){
+    const q=st.q; if(q.found.concat(q.wrong).some(x=>x.s===s&&x.f===f)) return;
+    pluck(m);
+    if(m===q.midi){ q.found.push({s,f}); if(q.found.length>=targets(q).length){ q.clicked={s,f}; q.ok=!q.wrong.length; record(q.ok); render(); scheduleNext(q.ok); return; } }
+    else { q.wrong.push({s,f}); st.streak=0; st.miss[q.s+"-"+q.f]=(st.miss[q.s+"-"+q.f]||0)+1; }
+    render(); return;
+  }
   const ok = m===st.q.midi; record(ok); pluck(m);
   st.q.clicked={s,f}; st.q.ok=ok; render(); scheduleNext(ok);
 }
@@ -650,6 +662,7 @@ function tabEntries(){ // [{s,f,color,tag}]
     const e=st.explore; return [{...e,color:"var(--accent)"}, ...allPositions(midiAt(e.s,e.f)).filter(x=>!(x.s===e.s&&x.f===e.f)).map(x=>({s:x.s,f:x.f,color:"var(--accent)"}))];
   }
   if(!q) return [];
+  if(allMode()) return [...q.found.map(x=>({...x,color:"var(--good)"})),...q.wrong.map(x=>({...x,color:"var(--bad)"}))];
   if(st.mode==="name") return [{s:q.s,f:q.f,color:st.answered?(q.ok?"var(--good)":"var(--bad)"):"var(--accent)"}];
   if(!st.answered) return [];
   if(st.mode==="read") return [{s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"}, ...allPositions(q.midi).filter(x=>!(x.s===q.s&&x.f===q.f)).map(x=>({s:x.s,f:x.f,color:"var(--good)"}))];
@@ -694,6 +707,11 @@ function renderBanner(){
   const q=st.q, c=$("coords"); $("next").hidden=true;
   if(st.mode==="explore" || !q || !st.answered) return; // drawTab already filled the column
   const name=label(spell(q.midi,q.pref));
+  if(allMode()){ const n=q.found.length;
+    let h=`<div class="bn-main"><span class="bn-note">${name}</span><span class="bn-spot">${n} spot${n===1?"":"s"}</span></div>`;
+    if(q.wrong.length) h+=`<div class="bn-you">${q.wrong.length} miss${q.wrong.length===1?"":"es"}</div>`;
+    h+=`<div class="bn-hint">tap anywhere for next</div>`; if(autoNext) h+=`<i class="bn-bar" style="animation-duration:${HOLD}ms"></i>`;
+    c.innerHTML=h; return; }
   const spot = st.mode==="find" ? (q.fixed || (q.ok ? q.clicked : {s:q.s,f:q.f})) : {s:q.s,f:q.f};
   let html=`<div class="bn-main"><span class="bn-note">${name}</span><span class="bn-spot">string ${spot.s}</span><span class="bn-spot">${spot.f===0?"open":"fret "+spot.f}</span></div>`;
   if(st.mode==="find" && !q.ok){ const cm=midiAt(q.clicked.s,q.clicked.f); html+=`<div class="bn-you">you: ${label(spell(cm,q.pref))} · s${q.clicked.s} ${q.clicked.f===0?"open":"f"+q.clicked.f}</div>`; }
@@ -741,7 +759,7 @@ function render(){
   $("fretFrom").value=String(st.min); $("fretTo").value=String(st.max);
 document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.view===st.view)));
   $("viewnote").textContent={tab:"High E on top, like tab and chord books.",angled:"Looking down at your own neck: high E on top, low E closest to you.",facing:"Low E on top, headstock on the right, like watching someone play."}[st.view];
-  $("optAcc").checked=st.acc; $("optHint").checked=st.hint; $("optSound").checked=st.sound; $("optPiano").checked=st.piano; $("optOne").checked=st.one; $("optNames").checked=st.names;
+  $("optAcc").checked=st.acc; $("optHint").checked=st.hint; $("optSound").checked=st.sound; $("optPiano").checked=st.piano; $("optOne").checked=st.one; $("optAll").checked=st.all; $("optNames").checked=st.names;
   $("eyebrow").textContent=ASK[st.mode][0]; $("ask").textContent=ASK[st.mode][1];
   drawBoard();
   const q=st.q, fb=$("feedback"), msg=$("msg"), nx=$("next"), nn=$("notename");
@@ -767,6 +785,13 @@ document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-press
     } else { drawStaff(null); msg.textContent="Start anywhere. Try the open strings first."; }
   } else if(!q){
     drawStaff(null); msg.textContent="Turn on at least one string to get a question.";
+  } else if(st.mode==="find" && st.all){
+    const sp=drawStaff({midi:q.midi,pref:q.pref,color:st.answered?(q.ok?"var(--good)":"var(--bad)"):"var(--ink)"});
+    if(st.answered||st.hint) nn.innerHTML=label(sp);
+    q.found.forEach(x=>dot(x,"good",label(sp)));
+    q.wrong.forEach(x=>dot(x,"bad",label(spell(midiAt(x.s,x.f),q.pref))));
+    const n=targets(q).length;
+    $("ask").textContent = st.answered ? `All ${n} found${q.wrong.length?`, with ${q.wrong.length} miss${q.wrong.length===1?"":"es"}`:""}.` : `Find every spot for this note. ${q.found.length} of ${n} found.`;
   } else if(st.mode==="find"){
     const wrong = st.answered && !q.ok;
     const clickedMidi = st.answered ? midiAt(q.clicked.s,q.clicked.f) : null;
@@ -843,6 +868,7 @@ $("optHint").addEventListener("change",e=>{ st.hint=e.target.checked; render(); 
   document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !w.hidden){ setMenu(false); gear.focus(); } }); }
 $("optNames").addEventListener("change",e=>{ st.names=e.target.checked; try{localStorage.setItem("fts-names",st.names?"1":"0");}catch(err){} render(); });
 $("optOne").addEventListener("change",e=>{ st.one=e.target.checked; try{localStorage.setItem("fts-one",st.one?"1":"0");}catch(err){} render(); });
+$("optAll").addEventListener("change",e=>{ st.all=e.target.checked; try{localStorage.setItem("fts-all",st.all?"1":"0");}catch(err){} st.mode==="explore"?render():newQuestion(); });
 $("optSound").addEventListener("change",e=>{ st.sound=e.target.checked; });
 $("optPiano").addEventListener("change",e=>{ st.piano=e.target.checked; try{localStorage.setItem("fts-piano",st.piano?"1":"0");}catch(err){} render(); });
 $("next").addEventListener("click",()=>{ clearTimeout(advanceTimer); newQuestion(); });
