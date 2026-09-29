@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fret to Staff">
+<meta name="theme-color" content="#ECEEE8">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Fret to Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --page:#ECEEE8; --paper:#F8F9F5; --ink:#1A1E1C; --muted:#5B635D; --line:#CDD2CA; --line-soft:#DEE2DA;
+  --accent:#2A5FCF; --accent-soft:#DCE5F8; --good:#2C8452; --good-soft:#D8EEDF; --bad:#BE4036; --bad-soft:#F6DEDA;
+  --chip:#E2E5DE; --chip-on:#1A1E1C; --chip-on-ink:#F8F9F5;
+  --wood:#3A261F; --wood-edge:#2A1B16; --fret:#C4C8C1; --string:#E4DDCB; --wound:#C9B98F; --pearl:#EAE6DA; --dim:rgba(18,14,12,.55);
+  --display:"Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+  --sans:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* type scale */
+  --fs-xs:11px; --fs-sm:13px; --fs-md:15px; --fs-lg:19px; --fs-xl:28px;
+  /* spacing scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
+  --r-md:10px; --r-lg:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#121513; --paper:#1A1E1C; --ink:#E4E8E2; --muted:#98A199; --line:#323933; --line-soft:#272C28;
+    --accent:#7AA2FF; --accent-soft:#1F2B45; --good:#5CBB84; --good-soft:#193224; --bad:#E7766B; --bad-soft:#3A1E1B;
+    --chip:#232824; --chip-on:#E4E8E2; --chip-on-ink:#121513;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#121513; --paper:#1A1E1C; --ink:#E4E8E2; --muted:#98A199; --line:#323933; --line-soft:#272C28;
+  --accent:#7AA2FF; --accent-soft:#1F2B45; --good:#5CBB84; --good-soft:#193224; --bad:#E7766B; --bad-soft:#3A1E1B;
+  --chip:#232824; --chip-on:#E4E8E2; --chip-on-ink:#121513;
+}
+*{box-sizing:border-box}
+html,body{background:var(--page)}
+body{color:var(--ink);font-family:var(--sans);font-size:var(--fs-md);line-height:1.45;padding-inline:var(--s4);padding-block:var(--s5) 40px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:var(--s4)}
+button,select,input{font-family:inherit}
+.label{font:500 var(--fs-xs)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* header */
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s3) var(--s5)}
+h1{font-family:var(--display);font-weight:700;font-size:var(--fs-xl);line-height:1;margin:0;letter-spacing:-.01em}
+.sub{margin:var(--s1) 0 0;color:var(--muted);font-size:var(--fs-sm);max-width:56ch}
+.seg{display:inline-flex;background:var(--chip);border-radius:var(--r-md);padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--ink);font:500 var(--fs-sm)/1 var(--sans);padding:var(--s2) var(--s3);border-radius:8px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink)}
+.seg button:focus-visible,.btn:focus-visible,.ans:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kbd{font:500 10px var(--mono);border:1px solid currentColor;border-radius:4px;padding:0 4px;margin-left:6px;opacity:.6}
+
+/* stage: staff | question + tab */
+.stage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.staffbox{padding:var(--s3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s2);min-width:0}
+.staffbox svg#staff{width:100%;max-width:280px;height:auto;display:block}
+.pianobox{width:100%;max-width:260px;display:flex;flex-direction:column;gap:var(--s1)}
+.pianobox svg{width:100%;height:auto;display:block}
+.prompt{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3);min-width:0;border-inline:1px solid var(--line-soft)}
+.qtext{display:flex;flex-direction:column;gap:var(--s1)}
+.stats{display:flex;gap:var(--s4);margin-top:auto}
+.stat{display:flex;align-items:baseline;gap:6px}
+.tabcol{padding:var(--s3);display:flex;min-width:0;background:var(--page)}
+.tabcol svg{width:100%;height:100%;min-height:120px;display:block}
+.coords{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:2px;font:500 var(--fs-sm)/1.3 var(--mono);min-width:0;position:relative;min-height:190px}
+.notename{font-family:var(--display);font-weight:600;font-size:var(--fs-lg);min-height:26px;line-height:1.3;text-align:center}
+.notename small{font:500 var(--fs-sm) var(--mono);color:var(--muted);margin-left:var(--s2)}
+.notename small.bad{color:var(--bad)}
+.staffcap{font:500 var(--fs-xs)/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
+
+.eyebrow{font:500 var(--fs-xs)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.ask{font-family:var(--display);font-weight:600;font-size:var(--fs-md);line-height:1.3;margin:0}
+.stat span{font:500 var(--fs-xs)/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.stat b{font:700 var(--fs-md)/1 var(--mono);font-variant-numeric:tabular-nums}
+
+.coords .good{color:var(--good)} .coords .bad{color:var(--bad)} .coords .acc{color:var(--accent)} .coords .muted{color:var(--muted)}
+.coords b{font-weight:700;font-size:var(--fs-md)}
+
+.answers{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--s1)}
+.answers.twelve{grid-template-columns:repeat(6,minmax(0,1fr))}
+.ans{border:1px solid var(--line);background:var(--page);color:var(--ink);border-radius:8px;padding:6px 2px;font:600 var(--fs-md)/1.1 var(--display);cursor:pointer;min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ans small{font:400 var(--fs-xs) var(--mono);color:var(--muted)}
+.ans:hover{border-color:var(--ink)}
+.ans.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.ans.on small{color:var(--paper);opacity:.75}
+.ans.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.ans.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.ans:disabled{cursor:default}
+.octlegend{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font:500 var(--fs-xs)/1.2 var(--mono);color:var(--muted)}
+.octlegend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.feedback{display:none}
+.feedback .msg{display:none}
+.bn-main{display:flex;flex-direction:column;gap:2px}
+.bn-note{font:700 40px/1 var(--display);color:var(--good)}
+.bn-spot{font:700 40px/1.1 var(--mono);color:var(--good);letter-spacing:-.02em}
+.bn-you{font:600 var(--fs-sm)/1.3 var(--mono);color:var(--bad);margin-top:var(--s1)}
+.bn-hint{font:500 var(--fs-xs)/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.bn-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--good);border-radius:2px;transform-origin:left;animation:bnbar linear forwards}
+@keyframes bnbar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--paper);font:500 var(--fs-sm)/1 var(--sans);padding:var(--s2) var(--s3);border-radius:var(--r-md);cursor:pointer}
+
+/* neck (unchanged) */
+.boardwrap{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 12px 6px;overflow-x:auto}
+.boardwrap svg{display:block;width:100%;min-width:680px;height:auto;user-select:none;-webkit-user-select:none}
+.boardwrap svg.angled{transform-origin:100% 50%}
+.cell{cursor:pointer;fill:transparent}
+.cell:hover{fill:rgba(255,255,255,.07)}
+.cell:focus{outline:none} .cell:focus-visible{fill:rgba(122,162,255,.22)}
+
+/* settings */
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--s5) var(--s5);padding-top:var(--s2)}
+.panel{display:flex;flex-direction:column;gap:var(--s3);border-top:1px solid var(--line);padding-top:var(--s3);min-width:0}
+.panel h2{margin:0;font:600 var(--fs-md)/1.2 var(--display)}
+.field{display:flex;flex-direction:column;gap:var(--s2)}
+.viewnote{font-size:var(--fs-sm);color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{border:1px solid var(--line);background:var(--paper);color:var(--muted);border-radius:var(--r-md);padding:6px var(--s2);font:500 var(--fs-sm)/1.15 var(--sans);cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:78px}
+.chip b{font:600 var(--fs-sm)/1.1 var(--sans);color:var(--ink)}
+.chip small{font:400 var(--fs-xs) var(--mono)}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);background:var(--page)}
+.chip[aria-pressed="false"] b{color:var(--muted);text-decoration:line-through}
+.rangepick{display:flex;align-items:center;gap:var(--s2);font-size:var(--fs-sm)}
+.rangepick select{font:500 var(--fs-sm) var(--sans);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px var(--s2)}
+.toggles{display:flex;flex-direction:column;gap:var(--s1)}
+.toggle{display:inline-flex;align-items:center;gap:var(--s2);font-size:var(--fs-sm);cursor:pointer;padding:3px 0}
+.toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.foot{color:var(--muted);font-size:var(--fs-sm);max-width:72ch;margin:0}
+.foot b{color:var(--ink);font-weight:600}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.pop{transform-box:fill-box;transform-origin:center;animation:pop .18s ease-out}
+@media (prefers-reduced-motion:reduce){.pulse,.pop{animation:none}}
+@media (max-width:720px){
+  .stage{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .prompt{border-right:0}
+  .tabcol{grid-column:1 / -1;border-top:1px solid var(--line-soft)}
+  .tabcol svg{min-height:110px}
+  .coords{min-height:200px}
+  .bn-spot{font-size:30px}
+  .answers.twelve{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:440px){ .answers{grid-template-columns:repeat(4,minmax(0,1fr))} }
+/* phone held sideways: shrink everything above the neck */
+@media (orientation:landscape) and (max-height:520px){
+  body{padding-block:6px 24px}
+  .wrap{gap:6px}
+  header{flex-wrap:nowrap;gap:var(--s3)}
+  h1{font-size:18px;white-space:nowrap}
+  .sub,.kbd,.eyebrow,.staffcap{display:none}
+  header .seg button{padding:6px 9px;font-size:12px}
+  .stage{border-radius:var(--r-md);height:150px}
+  .staffbox{padding:4px;gap:2px}
+  .staffbox svg#staff{flex:1 1 0;min-height:0;width:100%;height:100%;max-width:none}
+  .notename{display:none}
+  .pianobox{max-width:none;flex:none}
+  .pianobox svg{max-height:34px}
+  .prompt{padding:6px var(--s3);gap:4px;overflow:hidden}
+  .ask{font-size:13px}
+  .coords{min-height:0}
+  .stats{gap:var(--s3)}
+  .stat b{font-size:13px}
+  .tabcol{padding:4px var(--s2)}
+  .tabcol svg{min-height:0}
+  .bn-note{font-size:24px}
+  .bn-spot{font-size:28px;line-height:1}
+  .bn-you{font-size:11px;margin-top:0}
+  .bn-main{gap:0}
+  .bn-hint{display:none}
+  .answers,.answers.twelve{gap:3px}
+  .answers.twelve{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .ans{min-height:26px;padding:2px;font-size:13px;border-radius:6px}
+  .ans small{font-size:9px}
+  .octlegend{display:none}
+  .boardwrap{padding:4px 6px 2px;border-radius:10px;overflow:visible}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fret to Staff</h1>
+      <p class="sub">Where every note lives on the neck, and where it sits on the page. Guitar is written in treble clef, an octave above how it sounds.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Mode" id="modes">
+      <button data-mode="find" aria-pressed="true">Find it<span class="kbd">1</span></button>
+      <button data-mode="read" aria-pressed="false">Read it<span class="kbd">2</span></button>
+      <button data-mode="name" aria-pressed="false">Name it<span class="kbd">3</span></button>
+      <button data-mode="explore" aria-pressed="false">Explore<span class="kbd">4</span></button>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="staffbox">
+      <svg id="staff" viewBox="0 16 250 198" role="img" aria-label="Treble staff"></svg>
+      <div class="notename" id="notename">&nbsp;</div>
+      <div class="staffcap">Guitar clef · sounds 8vb</div>
+    </div>
+    <div class="prompt">
+      <div class="qtext"><span class="eyebrow" id="eyebrow">Find it</span><p class="ask" id="ask">Click a fret that plays this note.</p></div>
+      <div class="coords" id="coords"></div>
+      <div class="answers" id="answers" hidden></div>
+      <div class="answers" id="picker" hidden></div>
+      <div class="octlegend" id="octlegend" hidden></div>
+      <div class="stats">
+        <div class="stat"><span>Score</span><b id="stScore">0/0</b></div>
+        <div class="stat"><span>Streak</span><b id="stStreak">0</b></div>
+        <div class="stat"><span>Best</span><b id="stBest">0</b></div>
+      </div>
+      <div class="feedback" id="feedback"><div class="msg" id="msg"></div><button class="btn" id="next" hidden>Next <span class="kbd">Enter</span></button></div>
+    </div>
+    <div class="tabcol">
+      <svg id="tab" viewBox="0 0 560 124" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Tab showing string and fret"></svg>
+    </div>
+  </section>
+
+  <div class="boardwrap"><svg id="board" viewBox="0 0 1000 238" aria-label="Guitar fretboard, standard tuning"></svg></div>
+
+  <section class="settings">
+    <div class="panel">
+      <h2>Practice</h2>
+      <div class="field">
+        <div class="label">Frets</div>
+        <div class="rangepick">
+          <label for="fretFrom">From</label><select id="fretFrom"></select>
+          <label for="fretTo">to</label><select id="fretTo"></select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Strings · your accuracy</div>
+        <div class="chips" id="strings"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Neck</h2>
+      <div class="field">
+        <div class="label">View</div>
+        <div class="seg" role="group" aria-label="Fretboard view" id="views">
+          <button data-view="tab" aria-pressed="true">Tab view</button>
+          <button data-view="angled" aria-pressed="false">Over the shoulder</button>
+          <button data-view="facing" aria-pressed="false">Facing a player</button>
+        </div>
+        <div class="viewnote" id="viewnote"></div>
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="optNames"> Note names on neck</label>
+        <label class="toggle"><input type="checkbox" id="optPiano"> Piano keys</label>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Quiz</h2>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="optAcc"> Sharps &amp; flats</label>
+        <label class="toggle"><input type="checkbox" id="optOne"> One spot only (Find it)</label>
+        <label class="toggle"><input type="checkbox" id="optHint"> Show name on staff</label>
+        <label class="toggle"><input type="checkbox" id="optSound" checked> Sound</label>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot"><b>How it works.</b> Notes you miss come back more often. The tab box shows each answer as string and fret, the way tab is written. The open low E is written three ledger lines below the staff, and the 12th fret on the high E three ledger lines above it.</p>
+</div>
+
+<script>
+(function(){
+const ANGLES={
+  standard:{tf:"perspective(1400px) rotateZ(3deg) rotateY(-22deg) rotateX(38deg)",o:"100% 50%"},
+  gentle:{tf:"perspective(1600px) rotateZ(2deg) rotateY(-12deg) rotateX(24deg) scale(.97)",o:"100% 50%"},
+  steep:{tf:"perspective(1400px) rotateZ(3deg) rotateY(-24deg) rotateX(54deg) scale(1.04)",o:"100% 50%"},
+  neckup:{tf:"perspective(1400px) rotateZ(6deg) rotateY(-20deg) rotateX(42deg) scale(.96)",o:"100% 70%"},
+  close:{tf:"perspective(760px) rotateZ(3deg) rotateY(-24deg) rotateX(36deg) scale(1.05)",o:"100% 50%"}
+};
+const CLEF = "M434 2Q464 -103 464 -170Q464 -223 427.0 -257.0Q390 -291 337 -291Q287 -291 250.0 -261.5Q213 -232 213 -190Q213 -160 233.5 -133.5Q254 -107 283.5 -107.0Q313 -107 331.5 -128.5Q350 -150 350 -178Q350 -240 280 -240Q298 -268 338 -268Q353 -268 368.5 -263.5Q384 -259 401.0 -248.0Q418 -237 428.5 -213.5Q439 -190 439 -157Q439 -136 411 -6Q389 -12 356 -12Q259 -12 189.5 60.0Q120 132 120 232Q120 267 131.5 303.0Q143 339 157.5 366.5Q172 394 200.5 428.5Q229 463 248.5 483.5Q268 504 303 539Q280 621 280 689Q280 779 313.0 839.5Q346 900 379 900Q389 900 401.5 887.0Q414 874 426.0 851.0Q438 828 446.5 790.5Q455 753 455 710Q455 551 342 447L368 329Q384 332 397 332Q458 332 500.0 282.5Q542 233 542 162Q542 44 434 2ZM426 746Q426 801 394 801Q358 801 333.0 748.0Q308 695 308 630Q308 588 321 557Q359 580 392.5 639.5Q426 699 426 746ZM498 128Q498 183 466.0 216.0Q434 249 383 249L428 23Q498 52 498 128ZM407 17 361 247Q334 241 311.5 214.0Q289 187 289 158Q289 143 295.0 128.5Q301 114 309.5 104.0Q318 94 327.0 86.0Q336 78 342.0 74.5Q348 71 348 71L340 66Q307 75 277.5 106.0Q248 137 248 184Q248 231 277.5 270.5Q307 310 343 323L325 430Q168 299 168 177Q168 104 223.0 55.0Q278 6 348 6Q365 6 407 17Z", SHARP="M365 24 319 6V-193L275 -209V-10L138 -63V-262L94 -279V-80L50 -96V0L94 17V262L50 245V341L94 358V589L138 606V376L275 429V659L319 675V446L365 464V366L319 348V104L365 122ZM275 88V332L138 279V34Z", FLAT="M222 441Q275 441 302.0 408.0Q329 375 329 317Q329 273 299.5 234.0Q270 195 192.5 117.0Q115 39 56 -34V783L99 802V402Q148 441 222 441ZM232 308Q232 373 183 373Q159 373 134.5 358.5Q110 344 99 319V87Q159 155 195.5 214.5Q232 274 232 308Z";
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const LETTERS = ["C","D","E","F","G","A","B"];
+const PC_NAT = {0:"C",2:"D",4:"E",5:"F",7:"G",9:"A",11:"B"};
+const PC12 = [["C"],["C♯","D♭"],["D"],["D♯","E♭"],["E"],["F"],["F♯","G♭"],["G"],["G♯","A♭"],["A"],["A♯","B♭"],["B"]];
+const STRINGS = [ // top to bottom, like tab
+  {n:1, name:"E", open:64}, {n:2, name:"B", open:59}, {n:3, name:"G", open:55},
+  {n:4, name:"D", open:50}, {n:5, name:"A", open:45}, {n:6, name:"E", open:40}];
+const ORD = ["","1st","2nd","3rd","4th","5th","6th"];
+const OCT_COL = {2:"#D9822B",3:"#23958A",4:"#6F5FE0",5:"#D23F77"};
+const octOf = m => Math.floor(m/12)-1; // sounding octave, middle C = 4
+const TOTAL_FRETS = 12;
+
+let st = {
+  mode:"find", min:0, max:5, view:"tab", angle:"standard", acc:false, hint:false, sound:true, piano:false, one:false, names:false,
+  on:{1:true,2:true,3:true,4:true,5:true,6:true},
+  score:0, tries:0, streak:0, best:0,
+  perString:{1:[0,0],2:[0,0],3:[0,0],4:[0,0],5:[0,0],6:[0,0]},
+  miss:{}, q:null, answered:false, lastKey:null, explore:null, pick:null
+};
+try{ const b = parseInt(localStorage.getItem("fts-best")||"0",10); if(b>0) st.best=b; const rr=(localStorage.getItem("fts-range")||"").split(","); if(rr.length===2){ const a=+rr[0], b=+rr[1]; if(a>=0&&b<=12&&a<=b){ st.min=a; st.max=b; } } const v=localStorage.getItem("fts-view"); if(v&&["tab","angled","facing"].includes(v)) st.view=v; if(localStorage.getItem("fts-piano")==="1") st.piano=true; if(localStorage.getItem("fts-one")==="1") st.one=true; if(localStorage.getItem("fts-names")==="1") st.names=true; }catch(e){}
+const saved = window.claude && window.claude.hot && window.claude.hot.data;
+if(saved && saved.st){ Object.assign(st, saved.st, {q:null, answered:false}); }
+if(window.claude && window.claude.hot && window.claude.hot.snapshot){ try{ window.claude.hot.snapshot(()=>({st})); }catch(e){} }
+
+// ---------- pitch helpers ----------
+const midiAt = (s,f) => STRINGS.find(x=>x.n===s).open + f;
+function spell(midi, pref){
+  const pc = ((midi%12)+12)%12; const oct = Math.floor(midi/12)-1;
+  if(PC_NAT[pc]) return {letter:PC_NAT[pc], acc:"", oct};
+  if(pref==="flat"){ const up=(pc+1)%12; return {letter:PC_NAT[up], acc:"♭", oct}; }
+  const dn=(pc+11)%12; return {letter:PC_NAT[dn], acc:"♯", oct};
+}
+const label = sp => sp.letter + sp.acc;
+const isNat = midi => PC_NAT[((midi%12)+12)%12] !== undefined;
+function allPositions(midi){
+  const out=[]; STRINGS.forEach(s=>{ const f=midi-s.open; if(f>=0 && f<=TOTAL_FRETS) out.push({s:s.n,f}); }); return out;
+}
+const posText = p => `${ORD[p.s]} string, ${p.f===0?"open":"fret "+p.f}`;
+const spotText = p => `string ${p.s} · ${p.f===0?"open":"fret "+p.f}`;
+
+// ---------- sound (plucked string) ----------
+let actx=null;
+function pluck(midi){
+  if(!st.sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==="suspended") actx.resume();
+    const sr=actx.sampleRate, f=440*Math.pow(2,(midi-69)/12), N=Math.max(2,Math.round(sr/f));
+    const len=Math.floor(sr*1.6), buf=actx.createBuffer(1,len,sr), y=buf.getChannelData(0);
+    for(let i=0;i<N;i++) y[i]=Math.random()*2-1;
+    const decay = midi<52 ? .996 : .993;
+    for(let i=N;i<len;i++) y[i]=decay*.5*(y[i-N]+y[i-N+1<len?i-N+1:i-N]);
+    const src=actx.createBufferSource(); src.buffer=buf;
+    const g=actx.createGain(); g.gain.value=.32; src.connect(g).connect(actx.destination); src.start();
+  }catch(e){}
+}
+
+// ---------- staff ----------
+const S=12, BOTTOM=118, NOTE_X=162, staff=$("staff");
+const yFor = dn => BOTTOM - (dn-30)*(S/2); // E4 (written) = bottom line
+function el(tag, attrs, parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+function drawStaff(note){ // note: {midiSounding, pref, color}
+  staff.innerHTML="";
+  for(let i=0;i<5;i++) el("line",{x1:8,x2:242,y1:BOTTOM-i*S,y2:BOTTOM-i*S,stroke:"var(--ink)","stroke-width":1.1},staff);
+  el("line",{x1:8,x2:8,y1:BOTTOM-4*S,y2:BOTTOM,stroke:"var(--ink)","stroke-width":1.2},staff);
+  // treble clef, curl on the G line
+  const k = 7.3*S/1191, gy = BOTTOM - S;
+  el("path",{d:CLEF, fill:"var(--ink)", transform:`translate(${14-120*k},${gy + 106*k}) scale(${k},${-k})`},staff);
+  const eight = el("text",{x:24, y:BOTTOM+2.6*S, "text-anchor":"middle", fill:"var(--ink)", "font-family":"Zilla Slab, Georgia, serif", "font-size":12, "font-weight":600},staff); eight.textContent="8";
+  if(!note) return;
+  const notes = Array.isArray(note) ? note : [note];
+  let first;
+  notes.forEach(n=>{ const sp=drawNote(n); if(!first) first=sp; });
+  return first;
+}
+function drawNote(note){ // {midi, pref, color, x, tag}
+  const X = note.x || NOTE_X;
+  const wm = note.midi + 12; // written an octave up
+  const sp = spell(wm, note.pref);
+  const dn = sp.oct*7 + LETTERS.indexOf(sp.letter), y=yFor(dn);
+  const col = note.color || "var(--ink)";
+  const g = el("g",{},staff);
+  for(let d=28; d>=dn; d-=2) el("line",{x1:X-15,x2:X+15,y1:yFor(d),y2:yFor(d),stroke:"var(--ink)","stroke-width":1.3},g);
+  for(let d=40; d<=dn; d+=2) el("line",{x1:X-15,x2:X+15,y1:yFor(d),y2:yFor(d),stroke:"var(--ink)","stroke-width":1.3},g);
+  const head = el("g",{class:"pop"},g);
+  if(note.onClick){
+    g.style.cursor="pointer"; g.setAttribute("role","button"); g.setAttribute("tabindex","0");
+    g.setAttribute("aria-label","Play the right note and go to the next one");
+    el("rect",{x:X-34,y:y-14,width:52,height:28,fill:"transparent"},g);
+    g.addEventListener("click",note.onClick);
+    g.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.stopPropagation(); note.onClick(); } });
+  }
+  el("ellipse",{cx:X,cy:y,rx:8.6,ry:6.1,fill:col},head);
+  el("ellipse",{cx:X,cy:y,rx:3.3,ry:5,fill:"var(--paper)",transform:`rotate(-55 ${X} ${y})`},head);
+  if(sp.acc==="♯"){ const a=3.1*S/954; el("path",{d:SHARP,fill:col,transform:`translate(${X-32-50*a},${y+198*a}) scale(${a},${-a})`},head); }
+  if(sp.acc==="♭"){ const a=2.9*S/836; el("path",{d:FLAT,fill:col,transform:`translate(${X-30-56*a},${y+130*a}) scale(${a},${-a})`},head); }
+  if(note.tag){
+    const t=el("text",{x:X,y:186,"text-anchor":"middle",fill:col,"font-family":"IBM Plex Mono, monospace","font-size":11,"font-weight":500},g);
+    t.textContent=note.tag;
+  }
+  if(note.name){
+    const n=el("text",{x:X,y:209,"text-anchor":"middle",fill:col,"font-family":"Zilla Slab, Georgia, serif","font-size":22,"font-weight":700},g);
+    n.textContent=note.name;
+  }
+  return sp;
+}
+
+// ---------- fretboard ----------
+const board=$("board"), NUT=78, TOP=14, SP=36, LEFT_OPEN=34;
+const SCALE=1812, SHOWN=12; // whole neck is always drawn at real spacing; the view zooms in on the chosen frets
+let VIEW={lo:0,hi:1000};
+const VIEWS={tab:"Tab view",player:"Player's view",angled:"Over the shoulder",facing:"Facing a player"};
+const flipX = () => st.view==="facing";
+const lowOnTop = () => st.view==="facing";
+const X = x => flipX() ? 1000-x : x;
+const RX = (x,w) => flipX() ? 1000-x-w : x;
+const fx = n => NUT + SCALE*(1-Math.pow(2,-n/12));
+const yRow = i => TOP + 12 + i*SP;
+const sy = s => yRow(lowOnTop() ? 6-s : s-1);
+const cxRaw = f => f===0 ? NUT-LEFT_OPEN+4 : (fx(f-1)+fx(f))/2;
+const cx = f => X(cxRaw(f));
+let marks;
+// Tilted views: center the projected neck in its box and trim the box to it.
+function fitBoard(){
+  board.style.marginTop=board.style.marginBottom="";
+  if(st.view!=="angled"){ board.style.transform=""; board.style.transformOrigin=""; return; }
+  const a=ANGLES[st.angle]||ANGLES.standard;
+  board.style.transformOrigin=a.o; board.style.transform=a.tf;
+  const wrap=board.parentElement, w=wrap.getBoundingClientRect();
+  if(!w.width) return;
+  const cs=getComputedStyle(wrap), pl=parseFloat(cs.paddingLeft)||0, pr=parseFloat(cs.paddingRight)||0;
+  let v=board.getBoundingClientRect();
+  // bbox of what's actually drawn (the transformed svg box includes empty corners)
+  const parts=board.querySelectorAll("rect.frame"); let L=1e9,R=-1e9,T=1e9,B=-1e9;
+  parts.forEach(n=>{ const r=n.getBoundingClientRect(); L=Math.min(L,r.left); R=Math.max(R,r.right); T=Math.min(T,r.top); B=Math.max(B,r.bottom); });
+  if(L>R) return;
+  const innerL=w.left+pl, innerW=w.width-pl-pr;
+  let s=Math.min(1.25, innerW/(R-L));
+  if(window.innerHeight<560){ // phone sideways: keep the whole neck on screen
+    const room=window.innerHeight-(w.top+window.scrollY)-16;
+    if(room>120) s=Math.min(s, room/(B-T));
+  }
+  const dx=(innerL+innerW/2)-(L+R)/2;
+  board.style.transform=`translateX(${dx}px) ${a.tf}`;
+  if(Math.abs(s-1)>.02){ // grow or shrink to use the width
+    board.style.transform=`translateX(${dx}px) ${a.tf} scale(${s})`;
+    let L2=1e9,R2=-1e9; parts.forEach(n=>{ const r=n.getBoundingClientRect(); L2=Math.min(L2,r.left); R2=Math.max(R2,r.right); });
+    const dx2=dx+((innerL+innerW/2)-(L2+R2)/2);
+    board.style.transform=`translateX(${dx2}px) ${a.tf} scale(${s})`;
+  }
+  // trim the box height to the drawn neck
+  T=1e9;B=-1e9; parts.forEach(n=>{ const r=n.getBoundingClientRect(); T=Math.min(T,r.top); B=Math.max(B,r.bottom); });
+  v=board.getBoundingClientRect();
+  const lay=board.clientHeight||board.clientWidth*238/1000, top=board.getBoundingClientRect(); // layout box top equals wrap content top
+  const layTop=w.top+(parseFloat(cs.paddingTop)||0), layBot=layTop+lay;
+  board.style.marginTop=(-(T-layTop)+6)+"px";
+  board.style.marginBottom=(-(layBot-B)+6)+"px";
+  // correct any leftover drift so the box hugs the drawing top and bottom
+  for(let k=0;k<2;k++){
+    const wr=wrap.getBoundingClientRect(), pt=parseFloat(cs.paddingTop)||0, pb=parseFloat(cs.paddingBottom)||0;
+    let T2=1e9,B2=-1e9; parts.forEach(n=>{ const r=n.getBoundingClientRect(); T2=Math.min(T2,r.top); B2=Math.max(B2,r.bottom); });
+    board.style.marginTop=((parseFloat(board.style.marginTop)||0)-((T2-(wr.top+pt))-6))+"px";
+    const wr2=wrap.getBoundingClientRect(); let B3=-1e9; parts.forEach(n=>{ const r=n.getBoundingClientRect(); B3=Math.max(B3,r.bottom); });
+    board.style.marginBottom=((parseFloat(board.style.marginBottom)||0)+((wr2.bottom-pb)-B3-6)*-1)+"px";
+  }
+}
+let fitT=null, lastW=0, lastH=0; window.addEventListener("resize",()=>{ clearTimeout(fitT); fitT=setTimeout(()=>{ if(innerWidth!==lastW||innerHeight!==lastH){ lastW=innerWidth; lastH=innerHeight; render(); } },120); });
+let ZK=1, ZL=0; // horizontal zoom onto the chosen frets: screen x = (x - ZL) * ZK
+const scx = f => (cx(f)-ZL)*ZK;
+function spotsInPlay(){ // [{s,f,color}] whose string and fret numbers get highlighted on the neck
+  const q=st.q, out=[];
+  if(st.mode==="explore"){ if(st.explore&&st.pick===null) out.push({...st.explore,color:"var(--accent)"}); return out; }
+  if(!q||!st.answered) return out;
+  if(st.mode==="find"){ if(q.fixed) out.push({...q.fixed,color:"var(--good)"}); if(q.ok) out.push({...q.clicked,color:"var(--good)"}); else { out.push({s:q.s,f:q.f,color:"var(--good)"}); out.push({...q.clicked,color:"var(--bad)"}); } }
+  else out.push({s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"});
+  return out;
+}
+function drawBoard(){
+  board.innerHTML="";
+  board.classList.toggle("angled", st.view==="angled");
+  board.setAttribute("viewBox","0 0 1000 238");
+  const bTop=TOP, bBot=yRow(5)+12, right=fx(SHOWN)+8;
+  // window: a sliver of the fret before the first chosen one, through the last chosen fret.
+  // Real fret spacing is kept; everything outside the window is cropped.
+  const hi = st.max>=12 ? 1000 : Math.min(1000, fx(st.max)+14);
+  const lo = st.min===0 ? 0 : Math.max(0, (fx(st.min-1)-6-0.03*hi)/0.97);
+  VIEW={lo,hi}; ZK=1000/(hi-lo); ZL = flipX() ? 1000-hi : lo;
+  const G=el("g",{transform:`translate(${-ZL*ZK},0) scale(${ZK},1)`},board);
+  const P=st.piano;
+  if(!P){
+    el("rect",{x:RX(NUT,right-NUT),y:bTop,width:right-NUT,height:bBot-bTop,fill:"var(--wood)",rx:2},G);
+    for(let i=0;i<9;i++){ const y=bTop+8+i*((bBot-bTop-16)/8); el("line",{x1:X(NUT),x2:X(right),y1:y+Math.sin(i)*2,y2:y-Math.cos(i*1.7)*2,stroke:"#fff","stroke-opacity":.035,"stroke-width":2},G); }
+  } else {
+    el("rect",{x:RX(NUT,right-NUT),y:bTop,width:right-NUT,height:bBot-bTop,fill:"var(--page)",rx:2},G);
+    STRINGS.forEach(s=>{ for(let f=0;f<=SHOWN;f++){
+      const m=s.open+f, black=!isNat(m), y=sy(s.n)-SP/2+5, h=SP-10;
+      const x0 = f===0 ? NUT-LEFT_OPEN-8 : fx(f-1)+3.5/ZK, w = f===0 ? LEFT_OPEN-2 : fx(f)-fx(f-1)-7/ZK;
+      el("rect",{x:RX(x0,w),y,width:w,height:h,fill:black?"#1B1D1C":"#FBFAF6","fill-opacity":black?1:.4,stroke:black?"#1B1D1C":"#B9BEB6","stroke-opacity":black?1:.6,"stroke-width":1,"vector-effect":"non-scaling-stroke"},G);
+    }});
+  }
+  if(st.one && st.mode==="find" && st.q && !st.answered){ const r=blockRange(st.q);
+    for(let f=0;f<=SHOWN;f++){ if(!(f<=r.lo||f>=r.hi)) continue;
+      const x0 = f===0 ? NUT-LEFT_OPEN-12 : fx(f-1), w = f===0 ? LEFT_OPEN+12 : fx(f)-fx(f-1);
+      el("rect",{x:RX(x0,w),y:bTop-2,width:w,height:bBot-bTop+4,fill:"#8F938D","fill-opacity":.62,"pointer-events":"none"},G); } }
+  for(let n=1;n<=SHOWN;n++) el("rect",{x:RX(fx(n)-1.6/ZK,3.2/ZK),y:bTop,width:3.2/ZK,height:bBot-bTop,fill:P?"#A8AEA6":"var(--fret)"},G);
+  el("rect",{x:RX(NUT-6/ZK,7/ZK),y:bTop-2,width:7/ZK,height:bBot-bTop+4,fill:P?"var(--muted)":"var(--pearl)"},G);
+  STRINGS.forEach(s=>{
+    const y=sy(s.n), w=[0,1,1.3,1.8,2.2,2.7,3.2][s.n];
+    const off = !st.on[s.n] && st.mode!=="explore";
+    el("line",{x1:X(NUT-LEFT_OPEN-6),x2:X(NUT-6/ZK),y1:y,y2:y,stroke:"var(--muted)","stroke-width":w,"stroke-opacity":off?.25:.8},G);
+    el("line",{x1:X(NUT),x2:X(right+4),y1:y,y2:y,stroke:P?"#8C8F87":(s.n>=4?"var(--wound)":"var(--string)"),"stroke-width":w,"stroke-opacity":off?.3:(P?.75:1)},G);
+  });
+  el("rect",{class:"frame",x:RX(VIEW.lo,VIEW.hi-VIEW.lo),y:TOP-4,width:VIEW.hi-VIEW.lo,height:bBot+24-(TOP-4),fill:"none","pointer-events":"none"},G);
+  STRINGS.forEach(s=>{ for(let f=0;f<=SHOWN;f++){
+    const x0 = f===0 ? NUT-LEFT_OPEN-10 : fx(f-1)+2/ZK, x1 = f===0 ? NUT-3/ZK : fx(f)-2/ZK;
+    const r=el("rect",{class:"cell",x:RX(x0,x1-x0),y:sy(s.n)-SP/2,width:x1-x0,height:SP,tabindex:0,role:"button","aria-label":`${ORD[s.n]} string ${f===0?"open":"fret "+f}`},G);
+    r.addEventListener("click",()=>onFret(s.n,f));
+    r.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); onFret(s.n,f);} });
+  }});
+  // unscaled layer: fret markers, labels, numbers, dots
+  // fret markers: bright pearl dots with a dark rim, drawn larger so the 3-5-7-9-12 landmarks stand out
+  const inlay = P ? {fill:"var(--accent)",stroke:"#fff","stroke-width":1.5} : {fill:"#F4EFE2",stroke:"#1A120E","stroke-width":1.5};
+  const ir = (P||st.names) ? 6 : 9, inView = x => x>-10 && x<1010;
+  const MARK_FRETS=[3,5,7,9,12];
+  [3,5,7,9].forEach(f=>{ const x=scx(f); if(inView(x)) el("circle",{cx:x,cy:(yRow(2)+yRow(3))/2,r:ir,...inlay,"pointer-events":"none"},board); });
+  if(inView(scx(12))) [yRow(1)+SP/2, yRow(3)+SP/2].forEach(y=>el("circle",{cx:scx(12),cy:y,r:ir,...inlay,"pointer-events":"none"},board));
+  if(st.names) STRINGS.forEach(s=>{ for(let f=0;f<=SHOWN;f++){
+    const x=scx(f); if(x<30||x>990) continue;
+    const m=s.open+f, black=!isNat(m);
+    const col = P ? (black?"#F2F1EC":"var(--ink)") : (f===0?"var(--ink)":"var(--pearl)");
+    const bg = P ? (black?"#1B1D1C":"var(--page)") : (f===0?"var(--paper)":"var(--wood)");
+    el("circle",{cx:x,cy:sy(s.n),r:12,fill:bg,"pointer-events":"none"},board);
+    const tx=el("text",{x,y:sy(s.n)+4.5,"text-anchor":"middle",fill:col,"fill-opacity":P?.9:.9,"font-family":"IBM Plex Sans, sans-serif","font-size":12.5,"font-weight":600,"pointer-events":"none"},board);
+    tx.textContent=label(spell(m, st.acc?"sharp":"sharp"));
+  }});
+  // tint the whole marker-fret columns so they read at a glance
+  MARK_FRETS.forEach(f=>{ const x=scx(f), w=(fx(f)-fx(f-1))*ZK-3; if(x+w/2<0||x-w/2>1000) return;
+    el("rect",{x:x-w/2,y:TOP,width:w,height:yRow(5)+12-TOP,fill:P?"var(--accent)":"#FFF3D6","fill-opacity":P?.1:.09,"pointer-events":"none"},board); });
+  // fade switched-off strings the same way blocked frets are faded
+  if(st.mode!=="explore") STRINGS.forEach(s=>{ if(!st.on[s.n]) el("rect",{x:0,y:sy(s.n)-SP/2,width:1000,height:SP,fill:"var(--paper)","fill-opacity":.78,"pointer-events":"none"},board); });
+  if(VIEW.lo>0) el("rect",{x:flipX()?974:0,y:0,width:26,height:238,fill:"var(--paper)"},board);
+  STRINGS.forEach(s=>{
+    const off = !st.on[s.n] && st.mode!=="explore";
+    const hs=spotsInPlay().find(h=>h.s===s.n);
+    const t=el("text",{x:flipX()?990:10,y:sy(s.n)+4.5,"text-anchor":flipX()?"end":"start",fill:hs?hs.color:(off?"var(--muted)":"var(--ink)"),"font-family":"IBM Plex Mono, monospace","font-size":hs?16:13,"font-weight":hs?700:500,"pointer-events":"none"},board);
+    t.textContent=String(s.n);
+  });
+  for(let n=0;n<=SHOWN;n++){
+    const x=scx(n); if(x<30||x>985) continue;
+    const hf=spotsInPlay().find(h=>h.f===n);
+    const t=el("text",{x,y:bBot+18,"text-anchor":"middle",fill:hf?hf.color:([3,5,7,9,12].includes(n)?"var(--ink)":"var(--muted)"),"font-family":"IBM Plex Mono, monospace","font-size":hf?16:([3,5,7,9,12].includes(n)?15:11),"font-weight":(hf||[3,5,7,9,12].includes(n))?700:400,"pointer-events":"none"},board);
+    t.textContent=n===0?"open":n;
+  }
+  marks = el("g",{},board);
+  fitBoard();
+}
+function blockFret(f){ // fade a whole fret column so it can't be used
+  const x=scx(f); const w=(f===0 ? LEFT_OPEN+10 : fx(f)-fx(f-1))*ZK; if(x+w/2<0||x-w/2>1000) return;
+  el("rect",{x:x-w/2,y:TOP-2,width:w,height:yRow(5)+14-TOP,fill:"var(--paper)","fill-opacity":.78,"pointer-events":"none"},marks);
+}
+function dot(p, kind, text, color){ // kind: target|good|bad|also|explore|oct
+  const x=scx(p.f); if(x<20||x>1000) return;
+  const fill = color || {target:"var(--accent)",good:"var(--good)",bad:"var(--bad)",also:"transparent",explore:"var(--accent)"}[kind];
+  const g=el("g",{class:kind==="target"?"pulse":"pop","pointer-events":"none"},marks);
+  el("circle",{cx:x,cy:sy(p.s),r:13,fill,stroke:kind==="also"?"var(--good)":"#0000","stroke-width":2.5,"stroke-dasharray":kind==="also"?"4 3":""},g);
+  if(text){ const t=el("text",{x,y:sy(p.s)+4.5,"text-anchor":"middle",fill:kind==="also"?(st.piano?"var(--good)":"var(--pearl)"):"#fff","font-family":"IBM Plex Sans, sans-serif","font-size":12.5,"font-weight":600},g); t.textContent=text; }
+}
+
+// ---------- questions ----------
+function pool(){
+  const out=[]; STRINGS.forEach(s=>{ if(!st.on[s.n]) return; for(let f=st.min;f<=st.max;f++){ const m=s.open+f; if(!st.acc && !isNat(m)) continue; out.push({s:s.n,f,midi:m}); }}); return out;
+}
+function newQuestion(){
+  const p=pool(); if(!p.length){ st.q=null; render(); return; }
+  let total=0; const w=p.map(x=>{ const key=x.s+"-"+x.f; const v=(key===st.lastKey?0.05:1)+2*(st.miss[key]||0); total+=v; return v; });
+  let r=Math.random()*total, i=0; while(r>w[i] && i<w.length-1){ r-=w[i]; i++; }
+  const q=p[i]; st.lastKey=q.s+"-"+q.f;
+  st.q={...q, pref: Math.random()<.5?"sharp":"flat"}; st.answered=false; render();
+}
+function record(ok){
+  const q=st.q, key=q.s+"-"+q.f; st.tries++; st.perString[q.s][1]++;
+  if(ok){ st.score++; st.streak++; st.perString[q.s][0]++; st.miss[key]=Math.max(0,(st.miss[key]||0)-1);
+    if(st.streak>st.best){ st.best=st.streak; try{localStorage.setItem("fts-best",String(st.best));}catch(e){} } }
+  else { st.streak=0; st.miss[key]=(st.miss[key]||0)+1; }
+  st.answered=true;
+}
+let advanceTimer=null;
+const HOLD=5000; // how long a result stays up before moving on by itself
+let autoNext=false;
+function scheduleNext(ok){ clearTimeout(advanceTimer); autoNext=!!ok; st.answeredAt=performance.now(); if(ok) advanceTimer=setTimeout(newQuestion, HOLD); }
+
+const isTarget=(q,s,f)=>q.s===s&&q.f===f;
+// Frets blocked for the current question: everything from the nearest other copy of the note outward.
+function blockRange(q){
+  let lo=-1, hi=99;
+  allPositions(q.midi).forEach(x=>{ if(isTarget(q,x.s,x.f) || !st.on[x.s] || x.f<st.min || x.f>st.max) return; if(x.f>q.f) hi=Math.min(hi,x.f); else if(x.f<q.f) lo=Math.max(lo,x.f); });
+  return {lo,hi};
+}
+const blocked=(s,f)=>{ if(!(st.one && st.mode==="find" && st.q && !st.answered)) return false; const r=blockRange(st.q); return f<=r.lo || f>=r.hi; };
+function onFret(s,f){
+  const m=midiAt(s,f);
+  if(st.mode==="explore"){ st.explore={s,f}; st.pick=null; pluck(m); render(); return; }
+  // after a miss, playing the right note moves on
+  if(st.q && st.answered){
+    if(performance.now()-(st.answeredAt||0)<350) return;
+    if(!st.q.ok && m===st.q.midi && !st.q.fixed && !(st.one && st.mode==="find" && !isTarget(st.q,s,f))){ st.q.fixed={s,f}; pluck(m); autoNext=true; st.answeredAt=performance.now(); render(); clearTimeout(advanceTimer); advanceTimer=setTimeout(newQuestion,HOLD); return; }
+    clearTimeout(advanceTimer); newQuestion(); return; // any other tap on the neck: next question
+  }
+  if(st.mode!=="find" || !st.q || st.answered) return;
+  if(blocked(s,f)) return; // fret is blocked off for this question
+  if(!st.on[s]) return; // string is switched off for this drill
+  const ok = m===st.q.midi; record(ok); pluck(m);
+  st.q.clicked={s,f}; st.q.ok=ok; render(); scheduleNext(ok);
+}
+function onAnswer(pc){
+  if(!st.q || st.answered) return;
+  const ok = pc===((st.q.midi%12)+12)%12; record(ok); pluck(st.q.midi);
+  st.q.picked=pc; st.q.ok=ok; render(); scheduleNext(ok);
+}
+
+// ---------- piano strip (sounding pitch, E2 to E5) ----------
+const P_LO=40, P_HI=76, WK=12;
+function drawPiano(hits){
+  const svg=$("piano"); svg.innerHTML="";
+  const whites=[]; for(let m=P_LO;m<=P_HI;m++) if(isNat(m)) whites.push(m);
+  const wx={}; whites.forEach((m,i)=>wx[m]=1+i*WK);
+  const hitCol=m=>{ const h=hits.find(x=>x.midi===m); return h?h.color:null; };
+  whites.forEach(m=>{ const c=hitCol(m); el("rect",{x:wx[m],y:1,width:WK-1,height:44,rx:1.5,fill:c||"#FBFAF6",stroke:"var(--muted)","stroke-width":.6},svg); });
+  for(let m=P_LO;m<=P_HI;m++){ if(isNat(m)) continue; const c=hitCol(m); el("rect",{x:wx[m-1]+WK-3.6,y:1,width:7.2,height:27,rx:1,fill:c||"#1B1D1C"},svg); }
+  el("circle",{cx:wx[60]+WK/2-.5,cy:39,r:2,fill:hitCol(60)?"#fff":"var(--muted)"},svg);
+  const lab=el("text",{x:wx[60]+WK/2-.5,y:56,"text-anchor":"middle",fill:"var(--muted)","font-family":"IBM Plex Mono, monospace","font-size":8},svg); lab.textContent="mid C";
+}
+
+// ---------- render ----------
+const ASK = {find:["Find it","Click a fret that plays this note."], read:["Read it","What note is on the staff?"], name:["Name it","What note is the marked fret?"], explore:["Explore","Tap a fret, or pick a note to see it everywhere."]};
+// ---------- tab box: string + fret coordinates ----------
+function tabEntries(){ // [{s,f,color,tag}]
+  const q=st.q;
+  if(st.mode==="explore"){
+    if(st.pick!==null){ const out=[]; STRINGS.forEach(s=>{ for(let f=0;f<=TOTAL_FRETS;f++){ const m=s.open+f; if(m%12===st.pick) out.push({s:s.n,f,midi:m}); }});
+      return out.sort((a,b)=>a.midi-b.midi||a.f-b.f).map(x=>({s:x.s,f:x.f,color:OCT_COL[octOf(x.midi)],tag:label(spell(x.midi,"sharp"))+octOf(x.midi)})); }
+    return st.explore ? [{...st.explore,color:"var(--accent)"}] : [];
+  }
+  if(!q) return [];
+  if(st.mode==="name") return [{s:q.s,f:q.f,color:st.answered?(q.ok?"var(--good)":"var(--bad)"):"var(--accent)"}];
+  if(!st.answered) return [];
+  if(st.mode==="read") return [{s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"}];
+  const out=[];
+  if(q.ok) out.push({...q.clicked,color:"var(--good)"});
+  else { out.push({s:q.s,f:q.f,color:"var(--good)",tag:"note"}); out.push({...q.clicked,color:"var(--bad)",tag:"you"}); if(q.fixed && !(q.fixed.s===q.s&&q.fixed.f===q.f)) out.splice(1,0,{...q.fixed,color:"var(--good)",tag:"played"}); }
+  return out;
+}
+function drawTab(){
+  const svg=$("tab"); svg.innerHTML="";
+  // drawing units: about 1 unit per screen pixel, so text stays a readable size in a narrow column
+  const bb=svg.getBoundingClientRect(), W=bb.width?Math.max(220,Math.min(560,bb.width)):320, H=(bb.width&&bb.height)?Math.max(100,W*bb.height/bb.width):124;
+  const ents=tabEntries(), L=58, R=W-8;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const top=14, gap=Math.min(40,(H-top-26)/5);
+  // "TAB" clef and string numbers (high E on top, as tab is written)
+  ["T","A","B"].forEach((c,i)=>{ const tx=el("text",{x:44,y:top+2.5*gap-24+7+i*24,"text-anchor":"middle",fill:"var(--muted)","font-family":"Zilla Slab, Georgia, serif","font-size":20,"font-weight":700},svg); tx.textContent=c; });
+  for(let s=1;s<=6;s++){
+    const y=top+(s-1)*gap, hit=ents.find(e=>e.s===s);
+    el("line",{x1:L,x2:R,y1:y,y2:y,stroke:hit?hit.color:"var(--muted)","stroke-opacity":hit?.9:.45,"stroke-width":hit?1.6:1},svg);
+    const n=el("text",{x:12,y:y+4,fill:hit?hit.color:"var(--muted)","font-family":"IBM Plex Mono, monospace","font-size":12,"font-weight":hit?700:500},svg); n.textContent=s;
+  }
+  el("line",{x1:L,x2:L,y1:top,y2:top+5*gap,stroke:"var(--muted)","stroke-opacity":.6,"stroke-width":1.5},svg);
+  el("line",{x1:R,x2:R,y1:top,y2:top+5*gap,stroke:"var(--muted)","stroke-opacity":.6,"stroke-width":1.5},svg);
+  const n=ents.length, span=R-L-40, step=n>1?Math.min(62,span/(n-1)):0, x0=n>1?L+20+(span-step*(n-1))/2:(L+R)/2;
+  ents.forEach((e,i)=>{
+    const x=x0+i*step, y=top+(e.s-1)*gap, txt=String(e.f), w=txt.length>1?26:18;
+    const g=el("g",{class:"pop"},svg);
+    el("rect",{x:x-w/2,y:y-10,width:w,height:20,rx:4,fill:"var(--page)"},g);
+    const t=el("text",{x,y:y+6,"text-anchor":"middle",fill:e.color,"font-family":"IBM Plex Mono, monospace","font-size":17,"font-weight":700},g); t.textContent=txt;
+    if(e.tag){ const tg=el("text",{x,y:top+5*gap+17,"text-anchor":"middle",fill:e.color,"font-family":"IBM Plex Mono, monospace","font-size":11,"font-weight":500},g); tg.textContent=e.tag; }
+  });
+  // coordinates beside the tab
+  const c=$("coords"), cls=col=>col==="var(--good)"?"good":col==="var(--bad)"?"bad":col==="var(--accent)"?"acc":"";
+  if(!ents.length){ c.innerHTML=`<span class="muted">${st.mode==="explore"?"Tap a fret":"String · fret"}</span>`; return; }
+  if(st.mode==="explore" && st.pick!==null){ const oct=new Set(ents.map(e=>e.tag.replace(/\D/g,""))); c.innerHTML=`<b>${ents.length} spots</b><span class="muted">${oct.size} octaves</span>`; return; }
+  c.innerHTML = ents.map(e=>`<span class="${cls(e.color)}">${e.tag&&e.tag!=="note"&&e.tag!=="played"?e.tag+": ":""}<b>${spotText(e)}</b></span>`).join("");
+}
+function renderBanner(){
+  const q=st.q, c=$("coords"); $("next").hidden=true;
+  if(st.mode==="explore" || !q || !st.answered) return; // drawTab already filled the column
+  const name=label(spell(q.midi,q.pref));
+  const spot = st.mode==="find" ? (q.fixed || (q.ok ? q.clicked : {s:q.s,f:q.f})) : {s:q.s,f:q.f};
+  let html=`<div class="bn-main"><span class="bn-note">${name}</span><span class="bn-spot">string ${spot.s}</span><span class="bn-spot">${spot.f===0?"open":"fret "+spot.f}</span></div>`;
+  if(st.mode==="find" && !q.ok){ const cm=midiAt(q.clicked.s,q.clicked.f); html+=`<div class="bn-you">you: ${label(spell(cm,q.pref))} · s${q.clicked.s} ${q.clicked.f===0?"open":"f"+q.clicked.f}</div>`; }
+  if(st.mode!=="find" && !q.ok) html+=`<div class="bn-you">you: ${PC12[q.picked].join("/")}</div>`;
+  html+=`<div class="bn-hint">tap anywhere for next</div>`;
+  if(autoNext) html+=`<i class="bn-bar" style="animation-duration:${HOLD}ms"></i>`;
+  c.innerHTML=html;
+}
+function renderPicker(){
+  const box=$("picker"), leg=$("octlegend"), show=st.mode==="explore";
+  box.hidden=!show; leg.hidden=!(show&&st.pick!==null);
+  if(!show) return;
+  box.className="answers"+(st.acc?" twelve":""); box.innerHTML="";
+  const pcs = st.acc ? [0,1,2,3,4,5,6,7,8,9,10,11] : [0,2,4,5,7,9,11];
+  pcs.forEach(pc=>{
+    const b=document.createElement("button"); b.className="ans"+(st.pick===pc?" on":""); b.type="button";
+    b.setAttribute("aria-pressed",String(st.pick===pc));
+    const names=PC12[pc]; b.innerHTML = names.length>1 ? `${names[0]}<small>${names[1]}</small>` : names[0];
+    b.addEventListener("click",()=>{
+      st.pick = st.pick===pc ? null : pc;
+      if(st.pick!==null){ const ms=[]; STRINGS.forEach(s=>{ for(let f=0;f<=TOTAL_FRETS;f++){ const m=s.open+f; if(m%12===pc && !ms.includes(m)) ms.push(m); }}); ms.sort((a,b)=>a-b).forEach((m,i)=>setTimeout(()=>pluck(m),i*170)); }
+      render();
+    });
+    box.appendChild(b);
+  });
+  if(st.pick!==null){
+    const octs=[]; STRINGS.forEach(s=>{ for(let f=0;f<=TOTAL_FRETS;f++){ const m=s.open+f; if(m%12===st.pick){ const o=octOf(m); if(!octs.includes(o)) octs.push(o); } }});
+    leg.innerHTML = "Octave " + octs.sort().map(o=>`<span><i style="background:${OCT_COL[o]}"></i>${o}${o===4?" (middle C)":""}</span>`).join("");
+  }
+}
+function renderAnswers(){
+  const box=$("answers"); const show = (st.mode==="read"||st.mode==="name") && st.q;
+  box.hidden=!show; if(!show) return;
+  box.className="answers"+(st.acc?" twelve":""); box.innerHTML="";
+  const pcs = st.acc ? [0,1,2,3,4,5,6,7,8,9,10,11] : [0,2,4,5,7,9,11];
+  pcs.forEach(pc=>{
+    const b=document.createElement("button"); b.className="ans"; b.type="button";
+    const names=PC12[pc]; b.innerHTML = names.length>1 ? `${names[0]}<small>${names[1]}</small>` : names[0];
+    if(st.answered){ b.disabled=true; const tpc=((st.q.midi%12)+12)%12; if(pc===tpc) b.classList.add("right"); else if(pc===st.q.picked) b.classList.add("wrong"); }
+    b.addEventListener("click",()=>onAnswer(pc)); box.appendChild(b);
+  });
+}
+function render(){
+  document.querySelectorAll("#modes button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.mode===st.mode)));
+  $("fretFrom").value=String(st.min); $("fretTo").value=String(st.max);
+document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.view===st.view)));
+  $("viewnote").textContent={tab:"High E on top, like tab and chord books.",angled:"Looking down at your own neck: high E on top, low E closest to you.",facing:"Low E on top, headstock on the right, like watching someone play."}[st.view];
+  $("optAcc").checked=st.acc; $("optHint").checked=st.hint; $("optSound").checked=st.sound; $("optPiano").checked=st.piano; $("optOne").checked=st.one; $("optNames").checked=st.names;
+  $("eyebrow").textContent=ASK[st.mode][0]; $("ask").textContent=ASK[st.mode][1];
+  drawBoard();
+  const q=st.q, fb=$("feedback"), msg=$("msg"), nx=$("next"), nn=$("notename");
+  fb.className="feedback"; msg.innerHTML=""; nx.hidden=true; nn.innerHTML="&nbsp;";
+
+  if(st.mode==="explore" && st.pick!==null){
+    const pc=st.pick, pos=[]; STRINGS.forEach(s=>{ for(let f=0;f<=TOTAL_FRETS;f++){ if(((s.open+f)%12)===pc) pos.push({s:s.n,f,midi:s.open+f}); }});
+    const sp0=spell(pos[0].midi,"sharp"), nm=label(sp0);
+    pos.forEach(x=>dot(x,"oct",nm+octOf(x.midi),OCT_COL[octOf(x.midi)]));
+    const mids=[...new Set(pos.map(x=>x.midi))].sort((a,b)=>a-b);
+    const xs = mids.length===1 ? [162] : mids.map((_,i)=>92+i*(136/(mids.length-1)));
+    drawStaff(mids.map((m,i)=>({midi:m,pref:"sharp",color:OCT_COL[octOf(m)],x:xs[i]})));
+    const alt=spell(pos[0].midi,"flat");
+    nn.innerHTML=`All the ${nm}${sp0.acc?" / "+label(alt):""}`;
+  } else if(st.mode==="explore"){
+    const p=st.explore;
+    if(p){ const m=midiAt(p.s,p.f); const sp=drawStaff({midi:m,pref:"sharp",color:"var(--accent)"}); const w=spell(m,"sharp"),alt=spell(m,"flat");
+      dot(p,"explore",label(w));
+      allPositions(m).filter(x=>!(x.s===p.s&&x.f===p.f)).forEach(x=>dot(x,"also",label(w)));
+      nn.innerHTML=`${label(w)}${w.acc?" / "+label(alt):""}`;
+      const others=allPositions(m).length-1;
+      msg.innerHTML = others ? `The dashed rings are the same exact pitch in ${others===1?"one other spot":others+" other spots"}.` : `This is the only place this exact pitch lives in the first 12 frets.`;
+    } else { drawStaff(null); msg.textContent="Start anywhere. Try the open strings first."; }
+  } else if(!q){
+    drawStaff(null); msg.textContent="Turn on at least one string to get a question.";
+  } else if(st.mode==="find"){
+    const wrong = st.answered && !q.ok;
+    const clickedMidi = st.answered ? midiAt(q.clicked.s,q.clicked.f) : null;
+    const sp = wrong
+      ? drawStaff([{midi:q.midi,pref:q.pref,color:"var(--good)",x:122,tag:"note",name:label(spell(q.midi,q.pref)),onClick:()=>onFret(q.s,q.f)},{midi:clickedMidi,pref:q.pref,color:"var(--bad)",x:204,tag:"you",name:label(spell(clickedMidi,q.pref))}])
+      : drawStaff({midi:q.midi,pref:q.pref, color: st.answered?"var(--good)":"var(--ink)"});
+    if(wrong){ const cs0=spell(clickedMidi+12,q.pref); nn.innerHTML="&nbsp;"; nn.dataset.cs=label(cs0); }
+    else if(st.answered) nn.innerHTML=label(sp);
+    else if(st.hint) nn.innerHTML=label(sp);
+    if(st.answered){
+      const cs=spell(clickedMidi,q.pref);
+      (st.one?[{s:q.s,f:q.f}]:allPositions(q.midi)).forEach(x=>{ if(!(x.s===q.clicked.s&&x.f===q.clicked.f) && !(q.fixed&&x.s===q.fixed.s&&x.f===q.fixed.f)) dot(x,"also",label(sp)); });
+      dot(q.clicked, q.ok?"good":"bad", label(cs));
+      const n=allPositions(q.midi).length;
+      if(q.ok){ fb.classList.add("good"); msg.innerHTML=`<b>Yes.</b> ${label(sp)} on the ${posText(q.clicked)}.${n>1?` Dashed rings show where else it lives.`:""}`; }
+      else { fb.classList.add("bad"); msg.innerHTML=`You played <b>${label(cs)}</b> (red on the staff). The note was <b>${label(sp)}</b> (green), shown in the dashed ring${n>1?"s":""} on the neck. Play a ring or click the green note to go on.`; nx.hidden=false; }
+    }
+  } else if(st.mode==="read"){
+    const sp=drawStaff({midi:q.midi,pref:q.pref,color: st.answered?(q.ok?"var(--good)":"var(--bad)"):"var(--ink)", onClick:(st.answered&&!q.ok)?()=>onFret(q.s,q.f):null});
+    if(st.answered){ nn.innerHTML=label(sp);
+      allPositions(q.midi).forEach(x=>dot(x, x.s===q.s&&x.f===q.f?"good":"also", label(sp)));
+      if(q.ok){ fb.classList.add("good"); msg.innerHTML=`<b>Yes, ${label(sp)}.</b> On your guitar it's the ${posText(q)}${allPositions(q.midi).length>1?", and the other rings":""}.`; }
+      else { fb.classList.add("bad"); msg.innerHTML=`That's <b>${label(sp)}</b>, not ${PC12[q.picked].join("/")}. Line or space: count up from the bottom line, E.`; nx.hidden=false; }
+    }
+  } else if(st.mode==="name"){
+    const sp=spell(q.midi,q.pref);
+    if(st.answered){ drawStaff({midi:q.midi,pref:q.pref,color:q.ok?"var(--good)":"var(--bad)"}); nn.innerHTML=label(sp);
+      dot(q, q.ok?"good":"bad", label(sp));
+      if(q.ok){ fb.classList.add("good"); msg.innerHTML=`<b>Yes, ${label(sp)}.</b> Here's where it's written.`; }
+      else { fb.classList.add("bad"); msg.innerHTML=`That fret is <b>${label(sp)}</b>. Open ${STRINGS.find(x=>x.n===q.s).name}, then count up ${q.f} fret${q.f===1?"":"s"}.`; nx.hidden=false; }
+    } else { drawStaff(null); dot(q,"target",""); }
+  }
+  if(q && q.fixed && st.mode!=="explore"){
+    const fs=spell(q.midi,q.pref); dot(q.fixed,"good",label(fs));
+    nn.innerHTML = st.mode==="find" ? "&nbsp;" : label(fs);
+    fb.className="feedback good"; nx.hidden=true;
+    msg.innerHTML=`<b>That's it.</b> ${label(fs)} on the ${posText(q.fixed)}.`;
+  }
+
+  renderAnswers(); renderPicker(); drawTab(); renderBanner();
+  // stats
+  $("stScore").textContent=`${st.score}/${st.tries}`; $("stStreak").textContent=st.streak; $("stBest").textContent=st.best;
+  const chips=$("strings"); chips.innerHTML="";
+  STRINGS.slice().reverse().forEach(s=>{
+    const [c,t]=st.perString[s.n]; const b=document.createElement("button"); b.type="button"; b.className="chip"; b.setAttribute("aria-pressed",String(st.on[s.n]));
+    b.innerHTML=`<b>String ${s.n}</b><small>${t?Math.round(100*c/t)+"% of "+t:"no tries yet"}</small>`;
+    b.addEventListener("click",()=>{ st.on[s.n]=!st.on[s.n]; if(st.mode!=="explore") newQuestion(); else render(); });
+    chips.appendChild(b);
+  });
+}
+
+// ---------- controls ----------
+document.querySelectorAll("#modes button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+function setMode(m){ clearTimeout(advanceTimer); st.mode=m; if(m==="explore"){ st.explore=st.explore||{s:6,f:0}; render(); } else newQuestion(); }
+(function(){
+  const opts = n => Array.from({length:13},(_,i)=>`<option value="${i}">${i===0?"open":i}</option>`).join("");
+  $("fretFrom").innerHTML=opts(); $("fretTo").innerHTML=opts();
+  const changed = which => {
+    let a=+$("fretFrom").value, b=+$("fretTo").value;
+    if(a>b){ if(which==="from") b=a; else a=b; }
+    st.min=a; st.max=b; try{localStorage.setItem("fts-range",a+","+b);}catch(e){}
+    st.mode==="explore"?render():newQuestion();
+  };
+  $("fretFrom").addEventListener("change",()=>changed("from"));
+  $("fretTo").addEventListener("change",()=>changed("to"));
+})();
+document.querySelectorAll("#views button").forEach(b=>b.addEventListener("click",()=>{ st.view=b.dataset.view; try{localStorage.setItem("fts-view",st.view);}catch(e){} render(); }));
+$("optAcc").addEventListener("change",e=>{ st.acc=e.target.checked; st.mode==="explore"?render():newQuestion(); });
+$("optHint").addEventListener("change",e=>{ st.hint=e.target.checked; render(); });
+$("optNames").addEventListener("change",e=>{ st.names=e.target.checked; try{localStorage.setItem("fts-names",st.names?"1":"0");}catch(err){} render(); });
+$("optOne").addEventListener("change",e=>{ st.one=e.target.checked; try{localStorage.setItem("fts-one",st.one?"1":"0");}catch(err){} render(); });
+$("optSound").addEventListener("change",e=>{ st.sound=e.target.checked; });
+$("optPiano").addEventListener("change",e=>{ st.piano=e.target.checked; try{localStorage.setItem("fts-piano",st.piano?"1":"0");}catch(err){} render(); });
+$("next").addEventListener("click",()=>{ clearTimeout(advanceTimer); newQuestion(); });
+document.addEventListener("click",e=>{
+  if(st.mode==="explore" || !st.q || !st.answered) return;
+  if(performance.now()-(st.answeredAt||0)<350) return; // the tap that answered
+  if(e.target.closest(".cell, #staff [role=button], #next, header, .settings, select, input, label, a")) return;
+  clearTimeout(advanceTimer); newQuestion();
+});
+document.addEventListener("keydown",e=>{
+  if(e.target.closest && e.target.closest("input")) return;
+  if(["1","2","3","4"].includes(e.key)){ setMode(["find","read","name","explore"][+e.key-1]); return; }
+  if((e.key==="Enter"||e.key===" ") && st.answered && !e.target.classList.contains("cell")){ e.preventDefault(); clearTimeout(advanceTimer); newQuestion(); return; }
+  if((st.mode==="read"||st.mode==="name") && !st.acc && !st.answered){
+    const k=e.key.toUpperCase(); const i=LETTERS.indexOf(k); if(i>=0){ onAnswer([0,2,4,5,7,9,11][i]); }
+  }
+});
+
+function start(){ if(st.mode==="explore"){ st.explore=st.explore||{s:6,f:0}; render(); } else newQuestion(); }
+start();
+})();
+</script>
+
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
+</body>
+</html>
