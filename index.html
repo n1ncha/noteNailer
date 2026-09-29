@@ -633,15 +633,18 @@ function tabEntries(){ // [{s,f,color,tag}]
   if(st.mode==="explore"){
     if(st.pick!==null){ const out=[]; STRINGS.forEach(s=>{ for(let f=0;f<=TOTAL_FRETS;f++){ const m=s.open+f; if(m%12===st.pick) out.push({s:s.n,f,midi:m}); }});
       return out.sort((a,b)=>a.midi-b.midi||a.f-b.f).map(x=>({s:x.s,f:x.f,color:OCT_COL[octOf(x.midi)],tag:label(spell(x.midi,"sharp"))+octOf(x.midi)})); }
-    return st.explore ? [{...st.explore,color:"var(--accent)"}] : [];
+    if(!st.explore) return [];
+    const e=st.explore; return [{...e,color:"var(--accent)"}, ...allPositions(midiAt(e.s,e.f)).filter(x=>!(x.s===e.s&&x.f===e.f)).map(x=>({s:x.s,f:x.f,color:"var(--accent)"}))];
   }
   if(!q) return [];
   if(st.mode==="name") return [{s:q.s,f:q.f,color:st.answered?(q.ok?"var(--good)":"var(--bad)"):"var(--accent)"}];
   if(!st.answered) return [];
-  if(st.mode==="read") return [{s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"}];
+  if(st.mode==="read") return [{s:q.s,f:q.f,color:q.ok?"var(--good)":"var(--bad)"}, ...allPositions(q.midi).filter(x=>!(x.s===q.s&&x.f===q.f)).map(x=>({s:x.s,f:x.f,color:"var(--good)"}))];
   const out=[];
   if(q.ok) out.push({...q.clicked,color:"var(--good)"});
   else { out.push({s:q.s,f:q.f,color:"var(--good)",tag:"note"}); out.push({...q.clicked,color:"var(--bad)",tag:"you"}); if(q.fixed && !(q.fixed.s===q.s&&q.fixed.f===q.f)) out.splice(1,0,{...q.fixed,color:"var(--good)",tag:"played"}); }
+  // dashed rings on the neck (same pitch elsewhere) get a tab entry too
+  (st.one?[{s:q.s,f:q.f}]:allPositions(q.midi)).forEach(x=>{ if(!out.some(o=>o.s===x.s&&o.f===x.f)) out.push({s:x.s,f:x.f,color:"var(--good)"}); });
   return out;
 }
 function drawTab(){
