@@ -305,7 +305,7 @@ const octOf = m => Math.floor(m/12)-1; // sounding octave, middle C = 4
 const TOTAL_FRETS = 12;
 
 let st = {
-  mode:"find", min:0, max:5, view:"tab", angle:"standard", acc:false, hint:false, sound:true, piano:false, one:false, names:false,
+  mode:"find", min:0, max:12, view:"angled", angle:"standard", acc:false, hint:false, sound:true, piano:false, one:false, names:false,
   on:{1:true,2:true,3:true,4:true,5:true,6:true},
   score:0, tries:0, streak:0, best:0,
   perString:{1:[0,0],2:[0,0],3:[0,0],4:[0,0],5:[0,0],6:[0,0]},
